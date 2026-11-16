@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fluid Mechanics Project</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=Noto+Sans+Math&display=swap" rel="stylesheet">
+<style>
+/* Plan
+   Subject: a hinged quarter-circle sluice gate holding back water; audience: classmates, examiner, report readers.
+   Bold thing: the live tank scene, a deep-water band where the gate is painted safety yellow like a real sluice gate.
+   Everything below the scene is quiet, light, left-aligned reading and controls.
+   Layout: [dark scene band: title | presets / canvas | force ledger] -> [key settings strip overlapping the band] -> [controls | chart + table] -> [theory] */
+:root{
+  /* Single light theme by choice: white, minimal, one blue for water. */
+  --paper:#ffffff; --surface:#ffffff; --ink:#16191d; --muted:#6a7078; --line:#e6e8eb; --soft:#f6f7f8;
+  --gate:#16191d; --gate-ink:#ffffff; --water:#2b7bd6; --fh:#e0592a; --fv:#6750d8;
+  --good:#1f8a4c; --warn:#b7791f; --bad:#c8372d;
+  --display:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
+  --body:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
+  --sc-bg:#ffffff; --sc-deep:#ffffff; --sc-grid:#f1f3f5; --sc-ink:#16191d; --sc-muted:#6a7078; --sc-line:#e6e8eb;
+  --sc-steel:#a3abb3; --sc-water:#2b7bd6; --sc-fh:#e0592a; --sc-fv:#6750d8; --sc-fr:#16191d; --sc-gate:#16191d;
+  --sc-good:#1f8a4c; --sc-warn:#b7791f; --sc-bad:#c8372d;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:16px/1.55 var(--body)}
+sub{font-size:.72em;line-height:0}
+.w{max-width:1380px;margin:0 auto;padding:0 20px}
+:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
+
+/* ---------- scene band ---------- */
+.scene{background:var(--paper);color:var(--sc-ink);padding:56px 0 10px;border-top:1px solid var(--line)}
+.top{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+h1{font:600 clamp(46px,8.4vw,112px)/.95 var(--display);letter-spacing:-.045em;margin:0;text-wrap:balance}
+.stitle{font:600 clamp(28px,3.4vw,40px)/1.05 var(--display);letter-spacing:-.03em;margin:0;text-wrap:balance}
+/* landing */
+.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 0;font-size:14px}
+.nav b{font-weight:600}
+.nav nav{display:flex;gap:20px}
+.nav a{color:var(--muted);text-decoration:none} .nav a:hover{color:var(--ink)}
+.landing{padding:6vh 0 72px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:40px;align-items:center}
+@media (max-width:860px){.landing{grid-template-columns:1fr}}
+.kicker{font-size:15px;color:var(--muted);margin:0 0 18px}
+.intro{font-size:19px;line-height:1.5;color:var(--ink);max-width:34ch;margin:26px 0 30px}
+.cta{display:flex;flex-wrap:wrap;gap:10px}
+.cta a{font:500 15px var(--body);text-decoration:none;border-radius:999px;padding:11px 20px;border:1px solid var(--ink);color:var(--ink)}
+.cta a.pri{background:var(--ink);color:#fff}
+
+.fig svg{width:100%;height:auto;display:block}
+.fig .wet{animation:fill 1.8s cubic-bezier(.3,.7,.2,1) .2s both}
+@keyframes fill{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0 0 0 0)}}
+.fig .arr{animation:show .6s ease 1.9s both}
+@keyframes show{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){.fig .wet,.fig .arr{animation:none}}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);margin-bottom:64px}
+@media (max-width:700px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.facts div{padding:18px 18px 0 0}
+.facts dt{font-size:14px;color:var(--muted)}
+.facts dd{margin:2px 0 0;font:500 28px/1.2 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.about{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:24px 40px;padding:0 0 72px}
+@media (max-width:860px){.about{grid-template-columns:1fr}}
+.about p{margin:0 0 12px;max-width:62ch;font-size:16.5px;color:#30353b}
+
+.lede{margin:8px 0 0;color:var(--sc-muted);max-width:60ch;font-size:16px}
+.presets{display:grid;gap:8px;justify-items:start}
+.presets p{margin:0;font-size:13px;color:var(--sc-muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.scene .chip{background:transparent;color:var(--sc-ink);border:1px solid var(--sc-line);border-radius:999px;padding:6px 13px;font:400 14px var(--body);cursor:pointer;text-decoration:none}
+.scene .chip:hover{border-color:var(--sc-muted)}
+.scene .chip.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:500}
+.stagegrid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
+@media (max-width:1000px){.stagegrid{grid-template-columns:1fr}}
+.stage{border:1px solid var(--sc-line);border-radius:16px;overflow:hidden;background:var(--sc-bg)}
+canvas#sim{display:block;width:100%;height:auto;aspect-ratio:16/10.5;touch-action:none;cursor:grab}
+.stagebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px solid var(--sc-line)}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.btn{font:500 14px var(--body);border-radius:999px;padding:7px 15px;cursor:pointer;border:1px solid var(--sc-line);background:transparent;color:var(--sc-ink)}
+.btn:hover{border-color:var(--sc-muted)}
+.btn.go{background:var(--ink);border-color:var(--ink);color:#fff}
+.hint{font-size:13px;color:var(--sc-muted)}
+
+/* force ledger */
+.ledger{display:grid;gap:16px}
+.status{display:grid;gap:4px;padding-bottom:14px;border-bottom:1px solid var(--sc-line)}
+.state{font:600 24px/1.1 var(--display);letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.state::before{content:"";width:10px;height:10px;border-radius:50%;background:currentColor}
+.state.good{color:var(--sc-good)} .state.warn{color:var(--sc-warn)} .state.bad{color:var(--sc-bad)}
+.meta{font-size:14px;color:var(--sc-muted);font-variant-numeric:tabular-nums}
+.force{display:grid;gap:3px}
+.force .hd{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.force .nm{font-size:14px;color:var(--sc-muted)}
+.force .v{font:500 28px/1.1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.bar{height:6px;border-radius:3px;background:var(--sc-line);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px;transition:width .15s}
+.force .s{font-size:13px;color:var(--sc-muted)}
+.fh .v{color:var(--sc-fh)} .fh .bar i{background:var(--sc-fh)}
+.fv .v{color:var(--sc-fv)} .fv .bar i{background:var(--sc-fv)}
+.fr .bar i{background:var(--sc-fr)}
+.moment{padding-top:14px;border-top:1px solid var(--sc-line);display:grid;gap:8px}
+.moment .nm{font-size:14px;color:var(--sc-muted)}
+.tug{display:grid;grid-template-columns:1fr 1fr;height:10px;border-radius:5px;overflow:hidden;background:var(--sc-line)}
+.tug .o{justify-self:end;background:var(--sc-bad);height:100%} .tug .c{background:var(--sc-good);height:100%}
+.tuglbl{display:flex;justify-content:space-between;font-size:13px;color:var(--sc-muted);font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--sc-muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px}
+.legend em,.btn2 span{font-style:normal}
+
+/* ---------- key settings strip ---------- */
+.keys{color:var(--ink);margin:0 0 18px;position:relative;background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:18px 20px 20px}
+.keys-hd{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+h2{font:600 24px/1.15 var(--display);letter-spacing:-.025em;margin:0;text-wrap:balance}
+.keys-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+@media (max-width:1000px){.keys-grid{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:18px}}
+@media (max-width:560px){.keys-grid{grid-template-columns:1fr}}
+.kcell{padding:0 18px;border-left:1px solid var(--line);display:grid;gap:6px;align-content:start}
+.kcell:first-child{border-left:0;padding-left:0}
+@media (max-width:1000px){.kcell:nth-child(odd){border-left:0;padding-left:0}}
+@media (max-width:560px){.kcell{border-left:0;padding-left:0}}
+.kcell .row label{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
+.kcell .row label::before{content:"";width:10px;height:10px;border-radius:2px;background:var(--dot,var(--line))}
+.kcell.mg{--dot:var(--gate)} .kcell.mh{--dot:var(--fh)} .kcell.mv{--dot:var(--fv)} .kcell.dh{--dot:var(--water)}
+.kcell .row input[type=number]{font-size:20px;font-weight:500;width:112px;padding:5px 8px}
+.khint{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.45}
+.khint b{color:var(--ink)}
+.khint .ok{color:var(--good);font-weight:700} .khint .lo{color:var(--bad);font-weight:700}
+
+/* ---------- controls + inputs ---------- */
+.btn2{font:500 14px var(--body);border-radius:999px;padding:7px 14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn2:hover{border-color:var(--muted)}
+.btn2.go{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.row label{font-size:14px}
+.row .num{display:flex;align-items:center;gap:5px}
+.row input[type=number]{width:96px;font:400 15px var(--body);padding:4px 7px;border:1px solid var(--line);border-radius:6px;background:var(--soft);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.row .u{font-size:13px;color:var(--muted);min-width:26px}
+.row input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--water);margin:2px 0 0}
+select{font:400 14px var(--body);padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--soft);color:var(--ink)}
+.body{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px;margin-top:28px;align-items:start}
+@media (max-width:900px){.body{grid-template-columns:1fr}}
+.rack{display:grid;gap:22px}
+.group{display:grid;gap:12px}
+.group h3{font:600 16px/1.2 var(--display);margin:0;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.inline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;font-size:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;border-right:1px solid var(--line);background:transparent;color:var(--ink);padding:5px 13px;font:400 14px var(--body);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ink);color:var(--surface);font-weight:700}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:14px}
+.toggles label{display:flex;gap:7px;align-items:center;cursor:pointer}
+.toggles input{accent-color:var(--water)}
+.note{font-size:13.5px;color:var(--muted);margin:0;max-width:70ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.rightcol{display:grid;gap:22px}
+canvas#chart{width:100%;height:auto;aspect-ratio:16/8;display:block;margin:6px 0}
+.tablewrap{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-weight:700;color:var(--muted);font-size:13.5px}
+th:first-child,td:first-child{text-align:left}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--soft)}
+tr.cur td{background:#eef4fc}
+.theory{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:22px;margin-top:12px}
+.theory h3{font:600 17px/1.2 var(--display);margin:0 0 6px}
+.theory p{margin:0 0 10px;font-size:15px}
+.eq{background:var(--soft);border-radius:12px;padding:14px 16px;overflow-x:auto;display:grid;gap:10px}
+.eq math{font-family:"Noto Sans Math","Cambria Math","STIX Two Math",math;font-size:19px;color:var(--ink)}
+.eq .ln{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.eq .res math{font-size:21px}
+.eq .res{padding-top:8px;border-top:1px solid var(--line)}
+.eq .tag{font-size:13px;color:var(--muted);min-width:64px}
+.links{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.links a{font-size:14px;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:4px 12px;text-decoration:none;background:var(--soft)}
+.links a:hover{border-color:var(--muted)}
+footer{color:var(--muted);font-size:13px;padding:24px 0 40px;max-width:110ch}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 15px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.btn,.btn2,.scene .chip,.cta a,.seg button,.links a,tr.click{transition:transform .14s ease,background-color .14s ease,border-color .14s ease,box-shadow .14s ease,color .14s ease}
+.btn:hover,.btn2:hover,.scene .chip:hover,.cta a:hover,.links a:hover{transform:translateY(-1px);box-shadow:0 4px 12px -6px rgba(22,25,29,.35)}
+.btn:not(.go):hover,.btn2:not(.go):hover,.scene .chip:not(.on):hover,.cta a:not(.pri):hover,.links a:hover{background:var(--soft);border-color:var(--ink)}
+.btn.go:hover,.btn2.go:hover,.cta a.pri:hover{background:#2f343a;opacity:1}
+.seg button:hover:not(.on){background:var(--soft)}
+.btn:active,.btn2:active,.scene .chip:active,.cta a:active,.links a:active,.seg button:active{transform:translateY(0) scale(.96);box-shadow:none;transition-duration:.05s}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}.btn:hover,.btn2:hover,.scene .chip:hover,.cta a:hover,.links a:hover,.btn:active,.btn2:active,.scene .chip:active,.cta a:active{transform:none}}
+</style>
+</head>
+<body>
+<header class="w">
+  <div class="nav"><b>Fluid Mechanics Project</b><nav><a href="#simulator">Simulator</a><a href="#how">Theory</a></nav></div>
+  <section class="landing" aria-label="Introduction">
+    <div>
+      <p class="kicker">Curved gate under hydrostatic load</p>
+      <h1>Fluid Mechanics Project</h1>
+      <p class="intro">We measured the forces water puts on a quarter-circle gate, using a 3D-printed tank, pulleys and counterweights. This site lets you try the same experiment.</p>
+      <div class="cta"><a class="pri" href="#simulator">Open the simulator</a><a href="#how">Read the theory</a></div>
+    </div>
+    <figure class="fig" style="margin:0" aria-label="Drawing of the curved gate holding back water">
+      <svg viewBox="0 0 420 320" role="img">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>
+        <g class="wet"><path d="M60 110 L340 110 A140 140 0 0 1 200 250 L60 250 Z" fill="#2b7bd6" fill-opacity=".14"/><path d="M60 110 L340 110" stroke="#2b7bd6" stroke-width="1.2"/></g>
+        <path d="M60 80 V250 H200" fill="none" stroke="#16191d" stroke-width="3"/>
+        <path d="M200 250 A140 140 0 0 0 340 110" fill="none" stroke="#16191d" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="200" cy="250" r="6" fill="#fff" stroke="#16191d" stroke-width="2"/>
+        <g class="arr" font-family="Schibsted Grotesk, Arial, sans-serif" font-size="14">
+          <path d="M200 110 L281 236" stroke="#16191d" stroke-width="1" stroke-dasharray="4 5" opacity=".35"/>
+          <circle cx="200" cy="110" r="2.5" fill="#16191d"/>
+          <path d="M283 236 H350" stroke="#e0592a" stroke-width="2.2" marker-end="url(#ah)"/>
+          <text x="356" y="241" fill="#e0592a">F<tspan font-size="10" dy="3">H</tspan></text>
+          <path d="M281 238 V300" stroke="#6750d8" stroke-width="2.2" marker-end="url(#ah)"/>
+          <text x="258" y="300" fill="#6750d8">F<tspan font-size="10" dy="3">V</tspan></text>
+          <path d="M282 238 L314 288" stroke="#16191d" stroke-width="2.2" marker-end="url(#ah)"/>
+          <text x="320" y="296" fill="#16191d">F<tspan font-size="10" dy="3">R</tspan></text>
+          <circle cx="281" cy="236" r="3.5" fill="#fff" stroke="#16191d" stroke-width="1.5"/>
+          <text x="294" y="222" fill="#6a7078" font-size="12">tie point</text>
+          <text x="207" y="128" fill="#6a7078" font-size="12">R</text>
+          <text x="66" y="102" fill="#6a7078" font-size="12">water level</text>
+          <text x="150" y="272" fill="#6a7078" font-size="12">hinge</text>
+        </g>
+      </svg>
+    </figure>
+  </section>
+  <dl class="facts">
+    <div><dt>Gate radius</dt><dd>10 cm</dd></div>
+    <div><dt>Gate width</dt><dd>8 cm</dd></div>
+    <div><dt>Horizontal force, full tank</dt><dd>3.92 N</dd></div>
+    <div><dt>Vertical force, full tank</dt><dd>6.16 N</dd></div>
+  </dl>
+  <section class="about" aria-label="About the project">
+    <h2>About the project</h2>
+    <div>
+      <p>Water pushes on a curved surface in two ways. The horizontal force equals the push on the gate's vertical shadow, and the vertical force equals the weight of the water sitting above the gate. Because pressure always acts at right angles to the arc, the resultant passes straight through the centre of the circle.</p>
+      <p>Our rig turns this into something you can see. Two strings run from the gate over five pulleys to hanging cups: one pulls horizontally to balance F<sub>H</sub>, the other vertically to balance F<sub>V</sub>. With 400 g and 628 g in the cups, the full tank is held in balance. We also checked the five course cases, from a 0.5 m to a 1.5 m gate.</p>
+      <p style="color:var(--muted);font-size:14.5px">Aditya Sharma, CE25B001</p>
+    </div>
+  </section>
+</header>
+<section class="scene" id="simulator">
+ <div class="w">
+  <div class="top">
+    <div>
+      <h2 class="stitle">Simulator</h2>
+      <p class="lede">Change the size, the water level and the counterweights, and watch the gate respond.</p>
+    </div>
+    <div class="presets">
+      <p>Load a setup</p>
+      <div class="chips" id="presets"></div>
+    </div>
+  </div>
+  <section class="keys" aria-label="Key settings">
+    <div class="keys-hd">
+      <h2>Key settings</h2>
+      <div class="chips">
+        <button type="button" id="bBal" class="btn2 go">Balance F<sub>H</sub> and F<sub>V</sub></button>
+        <button type="button" id="bNoCw" class="btn2">Remove counterweights</button>
+      </div>
+    </div>
+    <div class="keys-grid" id="kbGrid"></div>
+  </section>
+  <div class="stagegrid">
+    <div class="stage">
+      <canvas id="sim" aria-label="Cross-section of the tank, curved gate, water and pulley rig"></canvas>
+      <div class="stagebar">
+        <div class="acts">
+          <button id="bFill" class="btn go" type="button">Fill tank</button>
+          <button id="bDrain" class="btn" type="button">Drain</button>
+          <button id="bClose" class="btn" type="button">Close gate</button>
+          <button id="bPause" class="btn" type="button">Pause</button>
+        </div>
+        <span class="hint">Drag the gate to move it by hand.</span>
+      </div>
+    </div>
+    <aside class="ledger" aria-label="Live results">
+      <div class="status">
+        <div class="state good" id="state">Closed</div>
+        <div class="meta" id="meta">Gate angle 0.0°</div>
+        <p class="hint" id="presetNote" style="margin:4px 0 0"></p>
+      </div>
+      <div class="force fh"><div class="hd"><span class="nm">Horizontal force F<sub>H</sub></span><span class="v" id="tFh">–</span></div><div class="bar"><i id="bFh"></i></div><div class="s" id="tFhs"></div></div>
+      <div class="force fv"><div class="hd"><span class="nm">Vertical force F<sub>V</sub></span><span class="v" id="tFv">–</span></div><div class="bar"><i id="bFv"></i></div><div class="s" id="tFvs"></div></div>
+      <div class="force fr"><div class="hd"><span class="nm">Resultant F<sub>R</sub></span><span class="v" id="tFr">–</span></div><div class="bar"><i id="bFr"></i></div><div class="s" id="tFrs"></div></div>
+      <div class="moment">
+        <div class="hd" style="display:flex;justify-content:space-between;align-items:baseline"><span class="nm">Moment about the hinge</span><span class="v" id="tM" style="font:700 18px var(--display)">–</span></div>
+        <div class="tug" aria-hidden="true"><div class="o" id="mO"></div><div class="c" id="mC"></div></div>
+        <div class="tuglbl"><span id="mOt">opening</span><span id="mCt">closing</span></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--sc-fh)"></i><em>F<sub>H</sub></em></span><span><i style="background:var(--sc-fv)"></i><em>F<sub>V</sub></em></span>
+        <span><i style="background:var(--sc-fr)"></i>Resultant</span><span><i style="background:var(--sc-water)"></i>Pressure</span><span><i style="background:var(--sc-gate)"></i>Gate</span>
+      </div>
+    </aside>
+  </div>
+ </div>
+</section>
+
+<main class="w">
+
+  <div class="body" style="margin-top:32px">
+    <aside class="rack" aria-label="More settings">
+      <div class="group">
+        <h3>Units</h3>
+        <div class="inline">Length <div class="seg" id="segLen"><button type="button" data-u="m">m</button><button type="button" data-u="cm">cm</button><button type="button" data-u="mm">mm</button></div></div>
+        <div class="inline">Force <div class="seg" id="segF"><button type="button" data-u="N">N</button><button type="button" data-u="kN">kN</button></div></div>
+      </div>
+      <div class="group" id="geo"><h3>Gate and tank</h3></div>
+      <div class="group" id="fluid"><h3>Fluid</h3>
+        <div class="inline"><label for="rhoSel">Liquid</label>
+          <select id="rhoSel">
+            <option value="1000">Fresh water</option><option value="1025">Sea water</option><option value="850">Oil</option>
+            <option value="1260">Glycerin</option><option value="13546">Mercury</option><option value="custom">Custom</option>
+          </select></div>
+      </div>
+      <div class="group"><h3>Show on the drawing</h3>
+        <div class="toggles" id="toggles"></div>
+        <div class="row"><label for="speed">Animation speed</label><div class="num"><span class="u" id="speedV">0.15×</span></div>
+          <input type="range" id="speed" min="0.02" max="1" step="0.01" value="0.15"></div>
+      </div>
+    </aside>
+    <div class="rightcol">
+      <section class="panel">
+        <h2>Forces as the tank fills</h2>
+        <canvas id="chart" aria-label="Horizontal and vertical force against water depth"></canvas>
+        <p class="note">Gate closed. Dots mark the current water depth.</p>
+      </section>
+      <section class="panel">
+        <h2>Course cases, R from 0.5 to 1.5 m</h2>
+        <div class="tablewrap"><table id="tbl"></table></div>
+        <p class="note" id="tblNote" style="margin-top:8px"></p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" id="how" style="margin-top:28px">
+    <h2>How the forces are found</h2>
+    <div class="theory" id="theory"></div>
+  </section>
+
+
+  <footer>Assumptions: fluid at rest (hydrostatic pressure only), gate sides sealed, water level falls to the gate edge if the gate opens past it, gate buoyancy neglected, frictionless hinge and pulleys. Pressure is integrated numerically over the gate in its current position, so results stay valid while it swings. Rig geometry from our v14 drawings. </footer>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+
+"use strict";
+// ---------- state (SI units internally) ----------
+const S = {R:0.1,w:0.08,L:0.05,h:0.1,rho:1000,g:9.81,mg:0.035,mh:0,mv:0,thMax:30,unit:"cm",funit:"N",speed:0.15,
+  show:{p:true,proj:false,vol:true,f:true,rig:true,dim:true}};
+const sim = {th:0, om:0, hNow:0.1, hTarget:0.1, paused:false, drag:false};
+const LU = {m:1,cm:100,mm:1000};
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const steelGate = (R,w)=>7850*0.01*w*Math.PI*R/2; // 10 mm steel plate
+const PRESETS = {
+  "model":{label:"Our model, no cups",R:.1,w:.08,L:.05,h:.1,mg:.035,mh:0,mv:0,unit:"cm",funit:"N",
+    note:"R = 10 cm, width 8 cm, base 5 cm, PLA gate ≈ 35 g, no counterweights. Fill the tank and the gate swings open to its 30° limit."},
+  "model-ideal":{label:"Ideal: weightless gate",R:.1,w:.08,L:.05,h:.1,mg:0,unit:"cm",funit:"N",balance:true,
+    note:"Ideal condition, as in our calculations: gate weight taken as zero, cups of FH/g and FV/g (400 g and 628 g). The full tank is held in balance with the gate closed."},
+  "model-real":{label:"Real: 35 g gate",R:.1,w:.08,L:.05,h:.1,mg:.035,mh:.4,mv:.628,unit:"cm",funit:"N",
+    note:"Real condition: the printed gate weighs about 35 g (enter your measured mass). Its weight adds an opening moment, so with the same 400 g and 628 g cups the gate settles a few degrees open."},
+  "model-balanced":{alias:"model-real"},
+  "model-half":{label:"Model, half full",R:.1,w:.08,L:.05,h:.05,mg:.035,mh:0,mv:0,unit:"cm",funit:"N",balance:true,
+    note:"Water at half the radius (5 cm), masses set to F/g for that depth."},
+  "r050":{label:"R 0.5 m",R:.5,w:1,L:.25,h:.5,unit:"m",funit:"kN",balance:true,real:true},
+  "r075":{label:"R 0.75 m",R:.75,w:1,L:.375,h:.75,unit:"m",funit:"kN",balance:true,real:true},
+  "r100":{label:"R 1.0 m",R:1,w:1,L:.5,h:1,unit:"m",funit:"kN",balance:true,real:true},
+  "r125":{label:"R 1.25 m",R:1.25,w:1,L:.625,h:1.25,unit:"m",funit:"kN",balance:true,real:true},
+  "r150":{label:"R 1.5 m",R:1.5,w:1,L:.75,h:1.5,unit:"m",funit:"kN",balance:true,real:true}
+};
+let curPreset = "model";
+
+// ---------- physics ----------
+function rot(x,z,th){const c=Math.cos(th),s=Math.sin(th);return [x*c+z*s,-x*s+z*c];}
+function gateTop(th){return rot(S.R,S.R,th);}
+function hEff(th){return Math.max(0,Math.min(sim.hNow, gateTop(th)[1]));}
+function hydro(R,w,h,rho,g,th,N){
+  N=N||300; let Fx=0,Fz=0,M=0,zFx=0,xFz=0;
+  const c=Math.cos(th),s=Math.sin(th),d=(Math.PI/2)/N;
+  for(let i=0;i<N;i++){
+    const ph=-Math.PI/2+(i+.5)*d, x0=R*Math.cos(ph), z0=R+R*Math.sin(ph);
+    const x=x0*c+z0*s, z=-x0*s+z0*c; if(z>=h) continue;
+    const p=rho*g*(h-z), nx0=Math.cos(ph), nz0=Math.sin(ph);
+    const nx=nx0*c+nz0*s, nz=-nx0*s+nz0*c, dA=w*R*d;
+    const fx=p*nx*dA, fz=p*nz*dA;
+    Fx+=fx; Fz+=fz; M+=z*fx-x*fz; zFx+=z*fx; xFz+=x*fz;
+  }
+  return {Fh:Fx,Fv:-Fz,M,zh:Fx?zFx/Fx:0,xv:Fz?xFz/Fz:0};
+}
+// rig geometry from v14 drawing, in units of R (model R = 100 mm)
+const RIG={T:[.537,.1564],P1:[-.30,.236],P2:[-.46,1.12],P3:[-.92,1.12],P4:[.617,1.35],P5:[1.42,1.35],r:.08};
+const sc=(p)=>[p[0]*S.R,p[1]*S.R];
+function tie(th){const t=sc(RIG.T);return rot(t[0],t[1],th);}
+const A1=()=>{const p=sc(RIG.P1);return [p[0],p[1]-RIG.r*S.R];};   // bottom of P1
+const A4=()=>{const p=sc(RIG.P4);return [p[0]-RIG.r*S.R,p[1]];};   // left of P4
+function strLen(th,A){const t=tie(th);return Math.hypot(A[0]-t[0],A[1]-t[1]);}
+function moments(th){
+  const H=hydro(S.R,S.w,hEff(th),S.rho,S.g,th,160);
+  const t=tie(th); let Mc=0;
+  for(const [m,A] of [[S.mh,A1()],[S.mv,A4()]]){
+    if(m<=0) continue; const dx=A[0]-t[0],dz=A[1]-t[1],L=Math.hypot(dx,dz),T=m*S.g;
+    const Fx=T*dx/L,Fz=T*dz/L; Mc+=-(t[1]*Fx-t[0]*Fz);
+  }
+  const G=rot(.6366*S.R,S.R-.6366*S.R,th); const Mg=G[0]*S.mg*S.g;
+  return {Mw:H.M, Mg, Mc, net:H.M+Mg-Mc, H};
+}
+function inertia(){
+  const Ig=S.mg*0.7268*S.R*S.R, Iw=0.1*S.rho*S.w*Math.pow(S.R,4);
+  const e=1e-3, lh=(strLen(e,A1())-strLen(0,A1()))/e, lv=(strLen(e,A4())-strLen(0,A4()))/e;
+  return Ig+Iw+S.mh*lh*lh+S.mv*lv*lv+1e-9;
+}
+
+// ---------- formatting ----------
+function fl(v,dp){const u=S.unit,x=v*LU[u];let d=dp!=null?dp:(u==="m"?3:u==="cm"?1:0);if(Math.abs(x)<1&&u!=="m")d=Math.max(d,2);return x.toFixed(d)+" "+u;}
+function ff(v){if(S.funit==="kN")return (v/1000).toFixed(Math.abs(v)<1000?3:2)+" kN";return (Math.abs(v)>=100?v.toFixed(1):v.toFixed(3))+" N";}
+function mU(){return Math.max(S.mh,S.mv,S.mg)>=5?{c:1,u:"kg"}:{c:1000,u:"g"};}
+function fm(kg){return kg<1?(kg*1000).toFixed(0)+" g":kg<1000?kg.toFixed(2)+" kg":(kg/1000).toFixed(2)+" t";}
+function fM(v){if(S.funit==="kN")return (v/1000).toFixed(3)+" kN·m";return v.toFixed(Math.abs(v)>=10?2:4)+" N·m";}
+
+// ---------- controls ----------
+const $=id=>document.getElementById(id);
+const fields={};
+function addField(parent,key,label,kind,min,max,step){
+  const id="f_"+key, row=document.createElement("div"); row.className="row";
+  row.innerHTML=`<label for="${id}"><span>${label}</span></label><div class="num"><input type="number" id="${id}" step="any"><span class="u" id="${id}_u"></span></div><input type="range" id="${id}_r" aria-label="${label} slider" min="${min}" max="${max}" step="${step}">`;
+  parent.appendChild(row);
+  const inp=row.querySelector("input[type=number]"), rng=row.querySelector("input[type=range]");
+  fields[key]={inp,rng,kind,unitEl:row.querySelector(".u")};
+  const conv=()=>kind==="len"?LU[S.unit]:kind==="mass"?mU().c:1;
+  inp.addEventListener("change",()=>{let v=parseFloat(inp.value);if(!isFinite(v))return;setVal(key,v/conv());});
+  rng.addEventListener("input",()=>setVal(key,parseFloat(rng.value)));
+}
+function setVal(key,v){
+  v=Math.max(0,v);
+  if(key==="R"){v=Math.max(.005,v);const k=v/S.R;S.R=v;S.h=Math.min(S.h*k,v);sim.hNow=Math.min(sim.hNow*k,v);sim.hTarget=Math.min(sim.hTarget*k,v);updateRanges();}
+  else if(key==="h"){v=Math.min(v,S.R);S.h=v;sim.hTarget=v;}
+  else if(key==="w"){S.w=Math.max(.001,v);}
+  else if(key==="thMax"){S.thMax=Math.min(80,Math.max(1,v));}
+  else if(key==="g"){S.g=Math.max(.1,v);}
+  else if(key==="rho"){S.rho=Math.max(1,v);syncRhoSel();}
+  else S[key]=v;
+  markCustom(); refreshInputs(); recalc();
+}
+function updateRanges(){
+  const R=S.R, big=Math.max(R*4,1.6);
+  const set=(k,min,max,step)=>{const r=fields[k].rng;r.min=min;r.max=max;r.step=step;};
+  set("R",.01,Math.max(2,R*1.5),.001); set("w",.005,Math.max(2,S.w*1.5),.001); set("L",0,Math.max(R*1.5,.05),.001);
+  set("h",0,R,R/500);
+  const mMax=Math.max(1,S.rho*S.g*S.w*R*R*0.8/S.g*1.6);
+  set("mh",0,mMax,mMax/1000); set("mv",0,mMax,mMax/1000);
+  set("mg",0,Math.max(.2,S.mg*3,steelGate(R,S.w)*1.5),.001);
+}
+function refreshInputs(){
+  for(const k in fields){const f=fields[k];const c=f.kind==="len"?LU[S.unit]:f.kind==="mass"?mU().c:1;
+    let v=(k==="h"?S.h:S[k]);
+    const disp=v*c; f.inp.value=+disp.toPrecision(5); f.rng.value=v;
+    f.unitEl.textContent=f.kind==="len"?S.unit:f.kind==="mass"?mU().u:f.kind==="deg"?"°":f.kind==="rho"?"kg/m³":"m/s²";
+  }
+  document.querySelectorAll("#segLen button").forEach(b=>b.classList.toggle("on",b.dataset.u===S.unit));
+  document.querySelectorAll("#segF button").forEach(b=>b.classList.toggle("on",b.dataset.u===S.funit));
+  $("speedV").textContent=S.speed.toFixed(2)+"×";
+}
+function syncRhoSel(){const sel=$("rhoSel");const o=[...sel.options].find(o=>+o.value===S.rho);sel.value=o?o.value:"custom";}
+function markCustom(){document.querySelectorAll("#presets .chip").forEach(c=>c.classList.remove("on"));$("presetNote").textContent="Your own setup, changed from the preset.";}
+
+function buildControls(){
+  const geo=$("geo"); addField(geo,"R","Radius R","len",.01,2,.001); addField(geo,"w","Gate width w","len",.005,2,.001);
+  addField(geo,"L","Flat base length L","len",0,1,.001);
+  addField(geo,"thMax","Max gate opening","deg",1,80,1);
+  const fl_=$("fluid"); addField(fl_,"rho","Density ρ","rho",500,14000,1); addField(fl_,"g","Gravity g","grav",1,25,.01);
+  const kb=$("kbGrid");
+  const cell=(cls,key,label,kind,min,max,step)=>{const c=document.createElement("div");c.className="kcell "+cls;kb.appendChild(c);addField(c,key,label,kind,min,max,step);const h=document.createElement("div");h.className="khint";h.id="hint_"+key;c.appendChild(h);};
+  cell("mg","mg","Gate mass","mass",0,.2,.001);
+  cell("mh","mh","F<sub>H</sub> cup","mass",0,1,.001);
+  cell("mv","mv","F<sub>V</sub> cup","mass",0,1,.001);
+  cell("dh","h","Water depth h","len",0,.1,.0002);
+  $("rhoSel").addEventListener("change",e=>{if(e.target.value==="custom"){fields.rho.inp.focus();return;}setVal("rho",+e.target.value);});
+  document.querySelectorAll("#segLen button").forEach(b=>b.onclick=()=>{S.unit=b.dataset.u;refreshInputs();recalc();});
+  document.querySelectorAll("#segF button").forEach(b=>b.onclick=()=>{S.funit=b.dataset.u;refreshInputs();recalc();});
+  const tg=$("toggles"), names={p:"Pressure arrows",proj:"Projection",vol:"Water above gate",f:"Force arrows",rig:"Pulley rig",dim:"Dimensions"};
+  for(const k in names){const l=document.createElement("label");l.innerHTML=`<input type="checkbox" id="t_${k}"${S.show[k]?" checked":""}> ${names[k]}`;tg.appendChild(l);
+    l.querySelector("input").addEventListener("change",e=>{S.show[k]=e.target.checked;});}
+  $("speed").addEventListener("input",e=>{S.speed=+e.target.value;refreshInputs();});
+  const pc=$("presets"), pl=$("plinks");
+  for(const k in PRESETS){if(PRESETS[k].alias)continue;const a=document.createElement("button");a.type="button";a.className="chip";a.dataset.k=k;a.textContent=PRESETS[k].label;a.onclick=()=>{location.hash=k;applyPreset(k);};pc.appendChild(a);
+    }
+  $("bFill").onclick=()=>{sim.hTarget=S.R;S.h=S.R;if(sim.hNow>=S.R*.999){sim.hNow=0;}refreshInputs();recalc();};
+  $("bDrain").onclick=()=>{sim.hTarget=0;S.h=0;refreshInputs();recalc();};
+  $("bClose").onclick=()=>{sim.th=0;sim.om=0;};
+  $("bPause").onclick=()=>{sim.paused=!sim.paused;$("bPause").textContent=sim.paused?"Play":"Pause";};
+  $("bBal").onclick=()=>{const H=hydro(S.R,S.w,S.h,S.rho,S.g,0);S.mh=H.Fh/S.g;S.mv=H.Fv/S.g;updateRanges();markCustom();refreshInputs();recalc();sim.th=0;sim.om=0;};
+  $("bNoCw").onclick=()=>{S.mh=0;S.mv=0;markCustom();refreshInputs();recalc();};
+  
+}
+function applyPreset(k){
+  if(PRESETS[k]&&PRESETS[k].alias)k=PRESETS[k].alias; const p=PRESETS[k]; if(!p) return; curPreset=k;
+  Object.assign(S,{R:p.R,w:p.w,L:p.L,h:p.h,unit:p.unit,funit:p.funit,rho:1000,g:9.81});
+  S.mg=p.real?0:p.mg; S.mh=p.mh||0; S.mv=p.mv||0;
+  if(p.balance){const H=hydro(S.R,S.w,S.h,S.rho,S.g,0);S.mh=H.Fh/S.g;S.mv=H.Fv/S.g;}
+  sim.th=0;sim.om=0;sim.hNow=0;sim.hTarget=S.h;
+  syncRhoSel(); updateRanges(); refreshInputs(); recalc();
+  document.querySelectorAll("#presets .chip").forEach(c=>c.classList.toggle("on",c.dataset.k===k));
+  $("presetNote").textContent=p.note||(`Course case: width 1 m, depth = R, gate weight neglected. Counterweights set to F/g so the gate is held shut.`);
+}
+
+// ---------- results ----------
+let Hfull=null;
+function recalc(){
+  Hfull=hydro(S.R,S.w,S.h,S.rho,S.g,0,600);
+  drawChart(); drawTable(); drawTheory();
+}
+function updateTiles(){
+  const th=sim.th, m=moments(th), H=m.H, FR=Math.hypot(H.Fh,H.Fv), ang=Math.atan2(H.Fv,H.Fh)*180/Math.PI;
+  $("tFh").textContent=ff(H.Fh); $("tFhs").textContent="Acts "+fl(H.zh)+" above the hinge";
+  $("tFv").textContent=ff(H.Fv); $("tFvs").textContent="Acts "+fl(H.xv)+" right of the hinge";
+  $("tFr").textContent=ff(FR); $("tFrs").textContent=(FR>0?ang.toFixed(1)+"° below horizontal, through the arc centre":"No water against the gate");
+  const big=Math.max(FR,1e-12); $("bFh").style.width=(H.Fh/big*100)+"%"; $("bFv").style.width=(H.Fv/big*100)+"%"; $("bFr").style.width=(FR>0?100:0)+"%";
+  const open=m.Mw+m.Mg, tot=Math.max(open,m.Mc,1e-12); $("tM").textContent=(open-m.Mc>=0?"+":"")+fM(open-m.Mc);
+  $("mO").style.width=(open/tot*100)+"%"; $("mC").style.width=(m.Mc/tot*100)+"%";
+  $("mOt").textContent="Opening "+fM(open); $("mCt").textContent="Closing "+fM(m.Mc);
+  const Hc=hydro(S.R,S.w,sim.hNow,S.rho,S.g,0,200);
+  const need=(m,F)=>{const T=m*S.g,ok=F>0?Math.abs(T-F)/F<0.02:T===0;return `Pulls <b>${ff(T)}</b>, needs <b>${ff(F)}</b> (${fm(F/S.g)})<br><span class="${ok?"ok":"lo"}">${ok?"Balanced":T<F?"Too light by "+fm((F-T)/S.g):"Too heavy by "+fm((T-F)/S.g)}</span>`;};
+  $("hint_mh").innerHTML=need(S.mh,Hc.Fh); $("hint_mv").innerHTML=need(S.mv,Hc.Fv);
+  $("hint_mg").innerHTML=`Weight <b>${ff(S.mg*S.g)}</b><br>Opening moment <b>${fM(m.Mg)}</b>`;
+  $("hint_h").innerHTML=`Pressure at the hinge <b>${(S.rho*S.g*sim.hNow/1000).toFixed(3)} kPa</b><br>${sim.hNow<S.h-1e-9?"Filling":sim.hNow>S.h+1e-9?"Draining":"Level steady"}`;
+  const st=$("state"); let cls,txt;
+  const thMax=S.thMax*Math.PI/180;
+  if(th<=1e-4&&m.net<=0){cls="good";txt="Gate held shut";}
+  else if(th>=thMax-1e-4&&m.net>0){cls="bad";txt="Open at the "+S.thMax+"° stop";}
+  else if(Math.abs(sim.om)<0.02&&Math.abs(m.net)<0.02*Math.max(1e-6,open+m.Mc)){cls="warn";txt="In balance";}
+  else {cls="warn";txt=sim.om>0?"Opening":"Closing";}
+  if(sim.drag){cls="warn";txt="Held by hand";}
+  st.className="state "+cls; st.textContent=txt;
+  const spill=sim.hNow>gateTop(th)[1]+0.003*S.R;
+  $("meta").textContent="Gate angle "+(th*180/Math.PI).toFixed(1)+"°, water depth "+fl(sim.hNow)+(spill?", spilling over the gate":"");
+}
+function drawTable(){
+  const rows=[.5,.75,1,1.25,1.5].map(R=>{const H=hydro(R,1,R,S.rho,S.g,0,600);return {R,H};});
+  const keys=["r050","r075","r100","r125","r150"];
+  let s=`<thead><tr><th>R</th><th>F<sub>H</sub></th><th>F<sub>V</sub></th><th>F<sub>R</sub></th><th>Angle</th><th>m<sub>H</sub></th><th>m<sub>V</sub></th></tr></thead><tbody>`;
+  rows.forEach((r,i)=>{const FR=Math.hypot(r.H.Fh,r.H.Fv);
+    s+=`<tr class="click${curPreset===keys[i]&&Math.abs(S.R-r.R)<1e-9?" cur":""}" data-k="${keys[i]}" tabindex="0"><td>${fl(r.R)}</td><td>${ff(r.H.Fh)}</td><td>${ff(r.H.Fv)}</td><td>${ff(FR)}</td><td>${(Math.atan2(r.H.Fv,r.H.Fh)*180/Math.PI).toFixed(1)}°</td><td>${fm(r.H.Fh/S.g)}</td><td>${fm(r.H.Fv/S.g)}</td></tr>`;});
+  $("tbl").innerHTML=s+"</tbody>";
+  $("tbl").querySelectorAll("tr.click").forEach(tr=>{const go=()=>{location.hash=tr.dataset.k;applyPreset(tr.dataset.k);};tr.onclick=go;tr.onkeydown=e=>{if(e.key==="Enter")go();};});
+  $("tblNote").textContent=`Width 1 m, depth equal to the radius, ρ = ${S.rho} kg/m³, g = ${S.g} m/s². Click a row to load it.`;
+}
+function drawTheory(){
+  const R=S.R,w=S.w,h=S.h,g=S.g,rho=S.rho,H=Hfull,FR=Math.hypot(H.Fh,H.Fv);
+  const full=Math.abs(h-R)<1e-9, n=(v,d)=>`<mn>${(+v).toFixed(d==null?3:d).replace(/(\.\d*?)0+$/,"$1").replace(/\.$/,"")}</mn>`;
+  const M=(x)=>`<math displaystyle="true">${x}</math>`;
+  const mi=x=>`<mi>${x}</mi>`, mo=x=>`<mo>${x}</mo>`, sub=(a,b)=>`<msub>${a}${b}</msub>`, fr=(a,b)=>`<mfrac><mrow>${a}</mrow><mrow>${b}</mrow></mfrac>`;
+  const FH=sub(mi("F"),mi("H")), FV=sub(mi("F"),mi("V")), FRr=sub(mi("F"),mi("R")), rho_=mi("ρ"), x=mo("×"), eq=mo("=");
+  const sq=a=>`<msup>${a}<mn>2</mn></msup>`, pi=mi("π");
+  const val=(v,u)=>`<mn>${v}</mn><mspace width="0.2em"/><mi mathvariant="normal">${u}</mi>`;
+  const fN=v=>{const t=ff(v).split(" ");return val(t[0],t[1]);};
+  const fL=v=>{const t=fl(v).split(" ");return val(t[0],t[1]);};
+  const ln=(tag,body,cls)=>`<div class="ln ${cls||""}"><span class="tag">${tag}</span>${M(body)}</div>`;
+  $("theory").innerHTML=`
+  <div><h3>Horizontal component</h3><p>Equal to the force on the vertical projection of the gate, a rectangle h by w. It acts at the centre of pressure, h/3 above the bottom.</p>
+  <div class="eq">
+   ${ln("Formula",`${FH}${eq}${rho_}${mi("g")}${fr(mi("h"),"<mn>2</mn>")}<mo>(</mo>${mi("h")}${mi("w")}<mo>)</mo>${eq}${fr(`${rho_}${mi("g")}${mi("w")}${sq(mi("h"))}`,"<mn>2</mn>")}`)}
+   ${ln("Values (SI)",`${eq}${fr(`${n(rho,0)}${x}${n(g,2)}${x}${n(w)}${x}${sq(n(h))}`,"<mn>2</mn>")}`)}
+   ${ln("Result",`${FH}${eq}${fN(rho*g*w*h*h/2)}`,"res")}
+   ${ln("Acts at",`${sub(mi("y"),mi("cp"))}${eq}${fr(mi("h"),"<mn>3</mn>")}${eq}${fL(h/3)}`)}
+  </div></div>
+  <div><h3>Vertical component</h3><p>Equal to the weight of water directly above the curved surface. When h = R that water is a quarter circle, acting through its centroid.</p>
+  <div class="eq">
+   ${ln("Formula",`${FV}${eq}${rho_}${mi("g")}${mi("V")}${eq}${rho_}${mi("g")}${mi("w")}${fr(`${pi}${sq(mi("R"))}`,"<mn>4</mn>")}`)}
+   ${ln("Values (SI)",`${eq}${n(rho,0)}${x}${n(g,2)}${x}${n(w)}${x}${fr(`${pi}${x}${sq(n(R))}`,"<mn>4</mn>")}`)}
+   ${ln(full?"Result":"At h = R",`${FV}${eq}${fN(rho*g*w*Math.PI*R*R/4)}`,"res")}
+   ${full?"":ln("At this h",`${FV}${eq}${fN(H.Fv)}`)}
+   ${ln("Acts at",`${mover(mi("x"))}${eq}${fr(`<mn>4</mn>${mi("R")}`,`<mn>3</mn>${pi}`)}${eq}${fL(4*R/(3*Math.PI))}`)}
+  </div></div>
+  <div><h3>Resultant</h3><p>Pressure acts at right angles to the arc, so every small force, and the resultant, passes through the centre of the circle.</p>
+  <div class="eq">
+   ${ln("Size",`${FRr}${eq}<msqrt>${sq(FH)}<mo>+</mo>${sq(FV)}</msqrt>${eq}${fN(FR)}`,"res")}
+   ${ln("Angle",`${mi("α")}${eq}<msup>${mi("tan")}<mrow><mo>−</mo><mn>1</mn></mrow></msup>${fr(FV,FH)}${eq}<mn>${(Math.atan2(H.Fv,H.Fh)*180/Math.PI).toFixed(2)}</mn><mo>°</mo>`)}
+   ${full?ln("When h = R",`${mi("α")}${eq}<msup>${mi("tan")}<mrow><mo>−</mo><mn>1</mn></mrow></msup>${fr(pi,"<mn>2</mn>")}${eq}<mn>57.52</mn><mo>°</mo>`):""}
+  </div></div>
+  <div><h3>Counterweights for our rig</h3><p>The F<sub>H</sub> string leaves the tie point horizontally to pulley P1 and over P2 and P3 to a cup. The F<sub>V</sub> string rises to P4 and over P5 to a second cup. Each cup balances one component.</p>
+  <div class="eq">
+   ${ln("F_H cup".replace("F_H","F<sub>H</sub>"),`${sub(mi("m"),mi("H"))}${eq}${fr(FH,mi("g"))}${eq}${val(fm(H.Fh/g).split(" ")[0],fm(H.Fh/g).split(" ")[1])}`,"res")}
+   ${ln("F_V cup".replace("F_V","F<sub>V</sub>"),`${sub(mi("m"),mi("V"))}${eq}${fr(FV,mi("g"))}${eq}${val(fm(H.Fv/g).split(" ")[0],fm(H.Fv/g).split(" ")[1])}`,"res")}
+   ${ln("Hinge",`${sub(mi("M"),mi("water"))}${full?`${eq}${FH}${mi("R")}`:""}${eq}${val(fM(H.M).split(" ")[0],fM(H.M).split(" ")[1])}`)}
+  </div></div>`;
+}
+function mover(a){return `<mover>${a}<mo>¯</mo></mover>`;}
+function copyResults(){
+  const H=Hfull,FR=Math.hypot(H.Fh,H.Fv);
+  const t=`Curved gate (quarter circle), R = ${fl(S.R)}, w = ${fl(S.w)}, h = ${fl(S.h)}, rho = ${S.rho} kg/m3, g = ${S.g} m/s2\nFH = ${ff(H.Fh)} (at ${fl(H.zh)} above hinge)\nFV = ${ff(H.Fv)} (at ${fl(H.xv)} from hinge line)\nFR = ${ff(FR)} at ${(Math.atan2(H.Fv,H.Fh)*180/Math.PI).toFixed(2)} deg below horizontal\nBalancing masses: mH = ${fm(H.Fh/S.g)}, mV = ${fm(H.Fv/S.g)}`;
+  const done=()=>toast("Results copied");
+  try{navigator.clipboard.writeText(t).then(done,()=>toast("Copy was blocked by the browser"));}catch(e){toast("Copy was blocked by the browser");}
+}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1600);}
+
+// ---------- colours ----------
+let C={};
+let CP={};
+function readColors(){const cs=getComputedStyle(document.documentElement);
+  const map={panel:"sc-bg",ink:"sc-ink",muted:"sc-muted",line:"sc-line",grid:"sc-grid",accent:"sc-gate",water:"sc-water",fh:"sc-fh",fv:"sc-fv",fr:"sc-fr",steel:"sc-steel"};
+  for(const k in map)C[k]=cs.getPropertyValue("--"+map[k]).trim();
+  for(const k of ["surface","ink","muted","line","water","fh","fv"])CP[k]=cs.getPropertyValue("--"+k).trim(); CP.grid=CP.line; CP.panel=CP.surface;}
+new MutationObserver(()=>{readColors();drawChart();}).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{readColors();drawChart();});
+
+// ---------- main canvas ----------
+const cv=$("sim"), cx=cv.getContext("2d");
+let view={sc:1,ox:0,oy:0}, dpr=1;
+function resize(){dpr=Math.min(2,window.devicePixelRatio||1);const r=cv.getBoundingClientRect();cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.width*11/16*dpr);
+  const c2=$("chart").getBoundingClientRect(); $("chart").width=Math.round(c2.width*dpr); $("chart").height=Math.round(c2.width*9/16*dpr); drawChart();}
+function fitView(){
+  const R=S.R, xmin=Math.min(-S.L-.25*R,-1.18*R), xmax=1.72*R, zmin=-.62*R, zmax=1.58*R;
+  const W=cv.width,H=cv.height, s=Math.min(W/(xmax-xmin),H/(zmax-zmin))*.96;
+  view.sc=s; view.ox=(W-(xmax-xmin)*s)/2 - xmin*s; view.oy=(H-(zmax-zmin)*s)/2 + zmax*s;
+}
+const X=x=>view.ox+x*view.sc, Y=z=>view.oy-z*view.sc;
+function arcPts(rad,th,n,maxZ){const pts=[];for(let i=0;i<=n;i++){const ph=-Math.PI/2+i/n*Math.PI/2;pts.push(rot(rad*Math.cos(ph),S.R+rad*Math.sin(ph),th));}return pts;}
+function arrow(x1,z1,x2,z2,col,wid,head){
+  const a=X(x1),b=Y(z1),c=X(x2),d=Y(z2),ang=Math.atan2(d-b,c-a),hl=(head||9)*dpr;
+  cx.strokeStyle=col;cx.fillStyle=col;cx.lineWidth=(wid||2)*dpr;cx.beginPath();cx.moveTo(a,b);cx.lineTo(c-Math.cos(ang)*hl*.6,d-Math.sin(ang)*hl*.6);cx.stroke();
+  cx.beginPath();cx.moveTo(c,d);cx.lineTo(c-hl*Math.cos(ang-.38),d-hl*Math.sin(ang-.38));cx.lineTo(c-hl*Math.cos(ang+.38),d-hl*Math.sin(ang+.38));cx.closePath();cx.fill();
+}
+function label(t,x,z,col,align,bold,size){cx.fillStyle=col;cx.font=`${bold?600:500} ${(size||12)*dpr}px "Schibsted Grotesk",Arial,sans-serif`;cx.textAlign=align||"left";cx.textBaseline="middle";
+  const tx=X(x),ty=Y(z),m=cx.measureText(t);cx.save();cx.globalAlpha=.85;cx.fillStyle=C.panel;
+  const ox=align==="center"?-m.width/2:align==="right"?-m.width:0;cx.fillRect(tx+ox-3*dpr,ty-8*dpr,m.width+6*dpr,16*dpr);cx.restore();cx.fillStyle=col;cx.fillText(t,tx,ty);}
+function dimLine(x1,z1,x2,z2,t,off){
+  cx.save();cx.strokeStyle=C.muted;cx.lineWidth=1*dpr;cx.setLineDash([]);
+  arrowHead(x1,z1,x2,z2);arrowHead(x2,z2,x1,z1);cx.beginPath();cx.moveTo(X(x1),Y(z1));cx.lineTo(X(x2),Y(z2));cx.stroke();cx.restore();
+  label(t,(x1+x2)/2+(off?off[0]:0),(z1+z2)/2+(off?off[1]:0),C.muted,"center");
+}
+function arrowHead(x1,z1,x2,z2){const a=X(x1),b=Y(z1),c=X(x2),d=Y(z2),ang=Math.atan2(d-b,c-a),hl=6*dpr;cx.fillStyle=C.muted;cx.beginPath();cx.moveTo(c,d);cx.lineTo(c-hl*Math.cos(ang-.45),d-hl*Math.sin(ang-.45));cx.lineTo(c-hl*Math.cos(ang+.45),d-hl*Math.sin(ang+.45));cx.closePath();cx.fill();}
+
+const PLATE=[[-111,98],[-109.6,98],[-56,58.7],[-56,-6],[0,-6],[0,-4],"ARC",[104,98],[106,98],[156.1,125],[160,125],[160,145],[40,145],[40,100],[-36,100],[-36,124],[-111,124]];
+let tAnim=0;
+function draw(){
+  const W=cv.width,H=cv.height,R=S.R,th=sim.th,he=hEff(th);
+  fitView(); cx.clearRect(0,0,W,H); cx.fillStyle=C.panel; cx.fillRect(0,0,W,H);
+  // grid (10 divisions per R)
+  cx.strokeStyle=C.grid;cx.lineWidth=1;const step=R/10*view.sc; if(step>4){cx.beginPath();for(let x=view.ox%step;x<W;x+=step){cx.moveTo(x,0);cx.lineTo(x,H);}for(let y=view.oy%step;y<H;y+=step){cx.moveTo(0,y);cx.lineTo(W,y);}cx.stroke();}
+  const k=R/0.1/1000; // rig drawing is in mm at R = 100 mm
+  // side plate outline (back)
+  if(S.show.rig){cx.beginPath();PLATE.forEach((p,i)=>{if(p==="ARC"){for(let j=0;j<=30;j++){const ph=-Math.PI/2+j/30*Math.PI/2;const x=104*Math.cos(ph),z=100+104*Math.sin(ph);cx.lineTo(X(x*k),Y(z*k));}return;}
+      const xx=p[0]<=-36?(-S.L+(p[0]+50)*k):p[0]*k; i?cx.lineTo(X(xx),Y(p[1]*k)):cx.moveTo(X(xx),Y(p[1]*k));});
+    cx.closePath();cx.fillStyle=C.grid;cx.globalAlpha=.55;cx.fill();cx.globalAlpha=1;cx.strokeStyle=C.line;cx.lineWidth=1*dpr;cx.stroke();}
+  // water
+  const pts=arcPts(R,th,120); let cut=pts.length-1, xi=pts[cut][0];
+  for(let i=1;i<pts.length;i++){if(pts[i][1]>=he&&pts[i-1][1]<he){const t=(he-pts[i-1][1])/(pts[i][1]-pts[i-1][1]);xi=pts[i-1][0]+t*(pts[i][0]-pts[i-1][0]);cut=i-1;break;}}
+  if(he>1e-6){
+    cx.beginPath();cx.moveTo(X(-S.L),Y(0));
+    const amp=reduce?0:Math.min(.006*R,he*.05);
+    for(let j=0;j<=24;j++){const x=-S.L+(xi+S.L)*j/24;cx.lineTo(X(x),Y(he+amp*Math.sin(j*.9+tAnim*3)*(j>0&&j<24?1:0)));}
+    for(let i=cut;i>=0;i--)cx.lineTo(X(pts[i][0]),Y(pts[i][1]));
+    cx.lineTo(X(0),Y(0));cx.closePath();
+    const gr=cx.createLinearGradient(0,Y(he),0,Y(0));gr.addColorStop(0,C.water+"55");gr.addColorStop(1,C.water+"aa");cx.fillStyle=gr;cx.fill();
+    // water above gate (Fv volume) hatch
+    if(S.show.vol){cx.save();cx.beginPath();cx.moveTo(X(0),Y(he));cx.lineTo(X(xi),Y(he));for(let i=cut;i>=0;i--)cx.lineTo(X(pts[i][0]),Y(pts[i][1]));cx.lineTo(X(0),Y(Math.min(0,pts[0][1])));cx.closePath();
+      cx.clip();cx.strokeStyle=C.fv;cx.globalAlpha=.22;cx.lineWidth=1*dpr;cx.beginPath();for(let d=-H;d<W+H;d+=8*dpr){cx.moveTo(d,0);cx.lineTo(d+H,H);}cx.stroke();cx.restore();
+      cx.save();cx.setLineDash([4*dpr,4*dpr]);cx.strokeStyle=C.fv;cx.lineWidth=1*dpr;cx.beginPath();cx.moveTo(X(0),Y(0));cx.lineTo(X(0),Y(he));cx.stroke();cx.restore();}
+  }
+  // floor + left wall
+  const t=.06*R; cx.fillStyle=C.steel;
+  cx.fillRect(X(-S.L-t),Y(R),t*view.sc,(R+t)*view.sc);           // wall
+  cx.fillRect(X(-S.L-t),Y(0),(S.L+t-0.051*R)*view.sc,t*view.sc);   // floor
+  // gate shell
+  const inner=arcPts(R,th,80), outer=arcPts(R*1.03,th,80);
+  cx.beginPath();inner.forEach((p,i)=>i?cx.lineTo(X(p[0]),Y(p[1])):cx.moveTo(X(p[0]),Y(p[1])));for(let i=outer.length-1;i>=0;i--)cx.lineTo(X(outer[i][0]),Y(outer[i][1]));cx.closePath();
+  cx.fillStyle=C.accent;cx.fill();
+  cx.beginPath();cx.arc(X(0),Y(0),.045*R*view.sc,0,Math.PI*2);cx.fillStyle=C.panel;cx.fill();cx.lineWidth=2*dpr;cx.strokeStyle=C.accent;cx.stroke();
+  cx.beginPath();cx.arc(X(0),Y(0),.02*R*view.sc,0,Math.PI*2);cx.fillStyle=C.ink;cx.fill();
+  // stop block
+  if(S.show.rig){cx.fillStyle=C.steel;cx.fillRect(X(.94*R),Y(1.06*R),.1*R*view.sc,.058*R*view.sc);}
+  // angle indicator
+  if(th>0.003){cx.strokeStyle=C.muted;cx.lineWidth=1*dpr;cx.setLineDash([3*dpr,3*dpr]);cx.beginPath();cx.moveTo(X(0),Y(0));cx.lineTo(X(0),Y(.45*R));cx.stroke();
+    const c0=rot(0,.45*R,th);cx.beginPath();cx.moveTo(X(0),Y(0));cx.lineTo(X(c0[0]),Y(c0[1]));cx.stroke();cx.setLineDash([]);
+    cx.beginPath();cx.arc(X(0),Y(0),.3*R*view.sc,-Math.PI/2,-Math.PI/2+th);cx.stroke();
+    label("θ "+(th*180/Math.PI).toFixed(1)+"°",.12*R,.36*R,C.ink,"left",true);}
+  // pressure arrows
+  const Hc=moments(th).H, pref=S.rho*S.g*R, Lp=.26*R;
+  if(S.show.p&&he>1e-6){
+    const tails=[];
+    for(let i=0;i<=16;i++){const ph=-Math.PI/2+(i/16)*Math.PI/2;const p0=[R*Math.cos(ph),R+R*Math.sin(ph)];const P=rot(p0[0],p0[1],th);if(P[1]>=he)continue;
+      const n=rot(Math.cos(ph),Math.sin(ph),th),p=S.rho*S.g*(he-P[1]),len=p/pref*Lp;const tl=[P[0]-n[0]*len,P[1]-n[1]*len];tails.push(tl);
+      if(len>R*.012)arrow(tl[0],tl[1],P[0],P[1],C.water,1.4,6);}
+    if(tails.length>1){cx.strokeStyle=C.water;cx.lineWidth=1*dpr;cx.beginPath();tails.forEach((q,i)=>i?cx.lineTo(X(q[0]),Y(q[1])):cx.moveTo(X(q[0]),Y(q[1])));cx.stroke();}
+  }
+  // vertical projection prism
+  if(S.show.proj&&he>1e-6){const xp=1.1*R, b=he/R*Lp*1.1;cx.beginPath();cx.moveTo(X(xp),Y(he));cx.lineTo(X(xp),Y(0));cx.lineTo(X(xp+b),Y(0));cx.closePath();cx.fillStyle=C.fh+"22";cx.fill();cx.strokeStyle=C.fh;cx.lineWidth=1*dpr;cx.stroke();
+    for(let j=1;j<=5;j++){const z=he*(1-j/5.5),bb=(he-z)/he*b;if(bb>R*.02)arrow(xp+bb,z,xp,z,C.fh,1,5);}
+    label("projection",xp,-.05*R,C.fh,"left");}
+  // rig
+  if(S.show.rig) drawRig(th);
+  // forces: drawn from the string tie point on the gate (where the resultant meets the arc), on the dry side
+  if(S.show.f&&he>1e-6){
+    const Fm=Math.max(Hc.Fh,Hc.Fv,1e-12),FR=Math.hypot(Hc.Fh,Hc.Fv),Lf=.36*R;
+    const Cc=rot(0,R,th), Tp=tie(th), n=[(Tp[0]-Cc[0])/R,(Tp[1]-Cc[1])/R], o=[Tp[0]+n[0]*.045*R,Tp[1]+n[1]*.045*R];
+    const d=[Hc.Fh/FR,-Hc.Fv/FR];
+    cx.save();cx.setLineDash([4*dpr,5*dpr]);cx.strokeStyle=C.fr;cx.lineWidth=1*dpr;cx.globalAlpha=.3;cx.beginPath();cx.moveTo(X(Cc[0]),Y(Cc[1]));cx.lineTo(X(o[0]),Y(o[1]));cx.stroke();cx.restore();
+    cx.beginPath();cx.arc(X(Cc[0]),Y(Cc[1]),2.5*dpr,0,Math.PI*2);cx.fillStyle=C.fr;cx.fill();
+    const lh=Lf*Hc.Fh/Fm, lv=Lf*Hc.Fv/Fm, lr=Lf*1.1;
+    arrow(o[0],o[1],o[0]+lh,o[1],C.fh,3,11); label("FH "+ff(Hc.Fh),o[0]+lh+.03*R,o[1]+.035*R,C.fh,"left",true);
+    arrow(o[0],o[1],o[0],o[1]-lv,C.fv,3,11); label("FV "+ff(Hc.Fv),o[0]-.03*R,o[1]-lv-.02*R,C.fv,"right",true);
+    arrow(o[0],o[1],o[0]+d[0]*lr,o[1]+d[1]*lr,C.fr,3.2,12); label("FR "+ff(FR),o[0]+d[0]*lr+.03*R,o[1]+d[1]*lr-.03*R,C.fr,"left",true);
+    cx.beginPath();cx.arc(X(o[0]),Y(o[1]),3.5*dpr,0,Math.PI*2);cx.fillStyle=C.panel;cx.fill();cx.strokeStyle=C.ink;cx.lineWidth=1.5*dpr;cx.stroke();
+    label("tie point",o[0]-.04*R,o[1]-.06*R,C.muted,"right");
+  }
+  // dimensions
+  if(S.show.dim){
+    dimLine(-S.L-.15*R,0,-S.L-.15*R,R,"wall "+fl(R),[-.02*R,0]);
+    if(he>1e-6) dimLine(-S.L+.07*R,0,-S.L+.07*R,he,"h "+fl(sim.hNow),[.13*R,0]);
+    dimLine(-S.L,-.12*R,0,-.12*R,"L "+fl(S.L),[0,-.05*R]);
+    const Cc=rot(0,R,th),q=rot(R*Math.cos(-.5),R+R*Math.sin(-.5),th);
+    cx.save();cx.setLineDash([2*dpr,3*dpr]);cx.strokeStyle=C.muted;cx.lineWidth=1*dpr;cx.beginPath();cx.moveTo(X(Cc[0]),Y(Cc[1]));cx.lineTo(X(q[0]),Y(q[1]));cx.stroke();cx.restore();
+    label("R "+fl(R),(Cc[0]+q[0])/2+.04*R,(Cc[1]+q[1])/2+.03*R,C.muted,"left");
+    label("width w = "+fl(S.w)+" (into page)",-S.L,1.5*R,C.muted,"left");
+  }
+}
+function pulley(P,ang){const p=sc(P),r=RIG.r*S.R;cx.beginPath();cx.arc(X(p[0]),Y(p[1]),r*view.sc,0,Math.PI*2);cx.fillStyle=C.panel;cx.fill();cx.strokeStyle=C.ink;cx.lineWidth=1.6*dpr;cx.stroke();
+  cx.beginPath();for(let i=0;i<3;i++){const a=ang+i*Math.PI*2/3;cx.moveTo(X(p[0]),Y(p[1]));cx.lineTo(X(p[0]+Math.cos(a)*r*.8),Y(p[1]+Math.sin(a)*r*.8));}cx.lineWidth=1*dpr;cx.stroke();
+  cx.beginPath();cx.arc(X(p[0]),Y(p[1]),r*.22*view.sc,0,Math.PI*2);cx.fillStyle=C.ink;cx.fill();}
+function drawRig(th){
+  const R=S.R,r=RIG.r*R,T=tie(th),a1=A1(),a4=A4();
+  const dh=strLen(th,a1)-strLen(0,a1), dv=strLen(th,a4)-strLen(0,a4);
+  const P1=sc(RIG.P1),P2=sc(RIG.P2),P3=sc(RIG.P3),P4=sc(RIG.P4),P5=sc(RIG.P5);
+  const line=(pts,col)=>{cx.strokeStyle=col;cx.lineWidth=1.5*dpr;cx.beginPath();pts.forEach((p,i)=>i?cx.lineTo(X(p[0]),Y(p[1])):cx.moveTo(X(p[0]),Y(p[1])));cx.stroke();};
+  const wrap=(P,a0,a1_,col)=>{cx.strokeStyle=col;cx.lineWidth=1.5*dpr;cx.beginPath();cx.arc(X(P[0]),Y(P[1]),r*view.sc,-a0,-a1_,a1_>a0);cx.stroke();};
+  const zh=.18*R+dh, zv=.06*R+dv;
+  // Fh path: T -> bottom P1, wrap left, up to P2 right, over top to P3, down left side
+  line([T,a1],C.fh); wrap(P1,-Math.PI/2,-Math.PI,C.fh);
+  line([[P1[0]-r,P1[1]],[P2[0]+r,P2[1]]],C.fh); wrap(P2,0,Math.PI/2,C.fh); line([[P2[0],P2[1]+r],[P3[0],P3[1]+r]],C.fh); wrap(P3,Math.PI/2,Math.PI,C.fh);
+  line([[P3[0]-r,P3[1]],[P3[0]-r,zh]],C.fh);
+  // Fv path: T -> left of P4, over top to P5, down right side
+  line([T,a4],C.fv); wrap(P4,Math.PI,Math.PI/2,C.fv); line([[P4[0],P4[1]+r],[P5[0],P5[1]+r]],C.fv); wrap(P5,Math.PI/2,0,C.fv);
+  line([[P5[0]+r,P5[1]],[P5[0]+r,zv]],C.fv);
+  pulley(RIG.P1,dh/r);pulley(RIG.P2,-dh/r);pulley(RIG.P3,-dh/r);pulley(RIG.P4,dv/r);pulley(RIG.P5,dv/r);
+  const cup=(x,z,wd,ht,m,col,txt)=>{cx.strokeStyle=col;cx.lineWidth=1.5*dpr;
+    cx.beginPath();cx.arc(X(x),Y(z-.02*R),.02*R*view.sc,Math.PI*1.5,Math.PI,false);cx.stroke();
+    if(m>0){cx.fillStyle=col+"33";cx.fillRect(X(x-wd/2),Y(z-.05*R),wd*view.sc,ht*view.sc);cx.strokeRect(X(x-wd/2),Y(z-.05*R),wd*view.sc,ht*view.sc);
+      label(fm(m),x,z-.05*R-ht/2,col,"center",true);} else label("no weight",x,z-.12*R,col,"center");
+    label(txt,x,z-.05*R-ht-.06*R,col,"center");};
+  cup(P3[0]-r,zh,.28*R,.42*R,S.mh,C.fh,"FH cup");
+  cup(P5[0]+r,zv,.24*R,.48*R,S.mv,C.fv,"FV cup");
+  cx.beginPath();cx.arc(X(T[0]),Y(T[1]),3.2*dpr,0,Math.PI*2);cx.fillStyle=C.ink;cx.fill();
+  label("P1",P1[0],P1[1]-.14*R,C.muted,"center");label("P2",P2[0],P2[1]+.15*R,C.muted,"center");label("P3",P3[0],P3[1]+.15*R,C.muted,"center");label("P4",P4[0],P4[1]+.15*R,C.muted,"center");label("P5",P5[0],P5[1]+.15*R,C.muted,"center");
+}
+
+// ---------- simulation loop ----------
+let last=performance.now(), tileClock=0;
+function step(now){
+  let dt=Math.min(.05,(now-last)/1000); last=now; tAnim+=dt;
+  if(!sim.paused){
+    // water level change
+    const rate=S.R/2.2; if(Math.abs(sim.hTarget-sim.hNow)>1e-9){const d=sim.hTarget-sim.hNow;sim.hNow+=Math.sign(d)*Math.min(Math.abs(d),rate*dt);}
+    if(!sim.drag){
+      const I=inertia(), thMax=S.thMax*Math.PI/180; let sdt=dt*S.speed; const n=12; const h_=sdt/n;
+      for(let i=0;i<n;i++){const M=moments(sim.th).net;const damp=2*Math.sqrt(Math.abs(M)/I+1)*1.2;
+        sim.om+=(M/I-damp*sim.om)*h_; sim.th+=sim.om*h_;
+        if(sim.th<=0){sim.th=0;if(sim.om<0)sim.om=-sim.om*.15;if(M<=0&&Math.abs(sim.om)<.05)sim.om=0;}
+        if(sim.th>=thMax){sim.th=thMax;if(sim.om>0)sim.om=-sim.om*.15;if(M>=0&&Math.abs(sim.om)<.05)sim.om=0;}}
+    }
+  }
+  draw(); tileClock+=dt; if(tileClock>.08){tileClock=0;updateTiles();}
+  requestAnimationFrame(step);
+}
+// drag the gate
+function toWorld(e){const r=cv.getBoundingClientRect();const px=(e.clientX-r.left)*dpr,py=(e.clientY-r.top)*dpr;return [(px-view.ox)/view.sc,(view.oy-py)/view.sc];}
+let dragOff=0;
+cv.addEventListener("pointerdown",e=>{const p=toWorld(e);const c=rot(0,S.R,sim.th);const d=Math.hypot(p[0]-c[0],p[1]-c[1]);if(Math.abs(d-S.R)<.15*S.R&&p[1]>-.2*S.R&&p[0]>-.05*S.R){sim.drag=true;dragOff=Math.atan2(p[0],p[1])-sim.th;cv.setPointerCapture(e.pointerId);}});
+cv.addEventListener("pointermove",e=>{if(!sim.drag)return;const p=toWorld(e);sim.th=Math.max(0,Math.min(S.thMax*Math.PI/180,Math.atan2(p[0],p[1])-dragOff));sim.om=0;});
+cv.addEventListener("pointerup",()=>{sim.drag=false;});
+cv.addEventListener("pointercancel",()=>{sim.drag=false;});
+
+// ---------- chart ----------
+function drawChart(){
+  const c=$("chart"),g=c.getContext("2d"),W=c.width,H=c.height; if(!W||!CP.ink)return; g.clearRect(0,0,W,H);
+  const pl=58*dpr,pr=16*dpr,pt=22*dpr,pb=40*dpr,R=S.R,N=60,fx=[],fy=[];
+  for(let i=0;i<=N;i++){const h=R*i/N,Hh=hydro(R,S.w,h,S.rho,S.g,0,200);fx.push(Hh.Fh);fy.push(Hh.Fv);}
+  const fdiv=S.funit==="kN"?1000:1,ymax0=Math.max(...fx,...fy)/fdiv||1;
+  const mag=Math.pow(10,Math.floor(Math.log10(ymax0))),nice=[1,2,2.5,5,10].map(m=>m*mag).find(v=>v*4>=ymax0)||mag*10,ymax=nice*Math.ceil(ymax0/nice);
+  const xs=i=>pl+(W-pl-pr)*i/N, ys=v=>H-pb-(H-pt-pb)*(v/fdiv)/ymax;
+  g.font=`500 ${11*dpr}px "Schibsted Grotesk",Arial,sans-serif`;g.fillStyle=CP.muted;g.strokeStyle=CP.grid;g.lineWidth=1;
+  for(let v=0;v<=ymax+1e-9;v+=nice){const y=H-pb-(H-pt-pb)*v/ymax;g.beginPath();g.moveTo(pl,y);g.lineTo(W-pr,y);g.stroke();g.textAlign="right";g.textBaseline="middle";g.fillText(+v.toPrecision(4)+"",pl-6*dpr,y);}
+  g.textBaseline="top";for(let i=0;i<=4;i++){const x=pl+(W-pl-pr)*i/4;g.textAlign=i===4?"right":i===0?"left":"center";g.fillText(fl(R*i/4),x,H-pb+6*dpr);}
+  g.textAlign="center";g.fillText("water depth h",pl+(W-pl-pr)/2,H-pb+22*dpr);
+  g.save();g.translate(14*dpr,pt+(H-pt-pb)/2);g.rotate(-Math.PI/2);g.fillText("force ("+S.funit+")",0,0);g.restore();
+  const line=(arr,col)=>{g.beginPath();arr.forEach((v,i)=>i?g.lineTo(xs(i),ys(v)):g.moveTo(xs(i),ys(v)));g.strokeStyle=col;g.lineWidth=2.4*dpr;g.stroke();
+    g.lineTo(xs(N),H-pb);g.lineTo(xs(0),H-pb);g.closePath();g.fillStyle=col+"18";g.fill();};
+  line(fy,CP.fv);line(fx,CP.fh);
+  const i0=Math.round(S.h/R*N);[[fx,CP.fh,"F_H"],[fy,CP.fv,"F_V"]].forEach(([a,col,nm])=>{g.beginPath();g.arc(xs(i0),ys(a[i0]),5*dpr,0,Math.PI*2);g.fillStyle=col;g.fill();g.strokeStyle=CP.panel;g.lineWidth=2*dpr;g.stroke();});
+  g.textAlign="left";g.textBaseline="middle";g.font=`600 ${12*dpr}px "Schibsted Grotesk",Arial,sans-serif`;
+  g.fillStyle=CP.fv;g.fillText("FV = weight of water above gate",pl+8*dpr,pt+4*dpr);g.fillStyle=CP.fh;g.fillText("FH = ρg h² w / 2",pl+8*dpr,pt+20*dpr);
+}
+
+// ---------- start ----------
+buildControls(); readColors();
+window.addEventListener("resize",resize);
+window.addEventListener("hashchange",()=>{const k=location.hash.slice(1);if(PRESETS[k]){applyPreset(k);$("simulator").scrollIntoView();}});
+const start=location.hash.slice(1); applyPreset(PRESETS[start]?start:"model-ideal"); if(PRESETS[start]) setTimeout(()=>$("simulator").scrollIntoView(),50);
+resize(); requestAnimationFrame(step);
+
+</script>
+</body>
+</html>
