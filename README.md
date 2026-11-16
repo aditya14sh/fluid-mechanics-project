@@ -2,7 +2,7 @@
 
 Interactive website for our Fluid Mechanics project: hydrostatic forces on a quarter-circle gate hinged at the bottom, with the pulley and counterweight rig of our physical model.
 
-**Live site:** https://adityash1406-cell.github.io/fluid-mechanics-project/
+**Live site:** https://aditya14sh.github.io/fluid-mechanics-project/
 
 ## What it does
 - Calculates the horizontal force F_H, vertical force F_V and resultant F_R on the gate
