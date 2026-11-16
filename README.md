@@ -14,7 +14,7 @@ Interactive website for our Fluid Mechanics project: hydrostatic forces on a qua
 Open a preset directly by adding a tag to the link, e.g. `#model-ideal`, `#model-real`, `#r100`.
 
 ## Project report
-The full project report is in [`report/Fluid_Mechanics_Project_Report_Curved_Gate.docx`](report/Fluid_Mechanics_Project_Report_Curved_Gate.docx) (click **Download raw file** to open it in Word).
+The full project report is in [`report/Fluid_Mechanics_Project_Report_Curved_Gate.docx`](report/Fluid_Mechanics_Project_Report_Curved_Gate.docx) (on that page, click **View raw** to download it and open it in Word).
 
 ## Files
 - `index.html` – the whole website (HTML, CSS and JavaScript in one file, no build step)
