@@ -16,8 +16,12 @@ Open a preset directly by adding a tag to the link, e.g. `#model-ideal`, `#model
 ## Project report
 The full project report is in [`report/Fluid_Mechanics_Project_Report_Curved_Gate.docx`](report/Fluid_Mechanics_Project_Report_Curved_Gate.docx) (on that page, click **View raw** to download it and open it in Word).
 
+## 3D models
+The STL files for 3D printing the physical model are in [`3d-models/`](3d-models/), with a parts list and print settings. GitHub shows each `.stl` file as a 3D view you can rotate in the browser.
+
 ## Files
 - `index.html` – the whole website (HTML, CSS and JavaScript in one file, no build step)
 - `report/` – the project report (Word)
+- `3d-models/` – STL files of the physical model for 3D printing
 
 Aditya Sharma, CE25B001

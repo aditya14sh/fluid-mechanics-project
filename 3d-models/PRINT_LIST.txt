@@ -1,0 +1,8 @@
+FINAL PRINT LIST (PLA/PETG, 0.2 mm, 4 walls, 30%+ infill) - quantity is in the file name
+SidePlate_A_x1, SidePlate_B_x1  -> print OUTER face down, the 5 axle posts point up (no supports). Posts are 6.5 mm OD, 4.3 mm bore, 36.5 mm tall.
+Floor_LeftWall_x1, Gate_x1      -> lay flat on side face, no supports
+Pulley_P1..P5_x1 each (5 total) -> flat, no supports
+Counterweight_Fh_400g_x1, Counterweight_Fv_628g_x1 -> upright
+NOT INCLUDED: hooks (you make them yourself). No sleeves any more (posts are part of the side plates).
+HARDWARE (not printed):
+ - 6x 4 mm dia rods (5 pulleys + hinge) - washers/retention to suit (rubber/nylon washers on hinge and P1 side, silicone bead)
